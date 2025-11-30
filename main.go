@@ -8,6 +8,7 @@ import (
 
 func main() {
 	http.HandleFunc("/timestamp", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]int64{
 			"timestamp": time.Now().Unix(),
 		})
