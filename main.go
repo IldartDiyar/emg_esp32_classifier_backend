@@ -114,10 +114,6 @@ func (h *Hub) SendSetTime(id string) {
 	log.Println("[CMD] SET_TIME ->", id, ts)
 }
 
-// =============================
-// HTTP API
-// =============================
-
 func main() {
 	hub := NewHub()
 
