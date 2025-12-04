@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  backend:
+    build: .
+    container_name: emg-backend
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: emguser
+      DB_PASS: emg123
+      DB_NAME: emgdb
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    container_name: emg-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: emguser
+      POSTGRES_PASSWORD: emg123
+      POSTGRES_DB: emgdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database.sql:/docker-entrypoint-initdb.d/database.sql:ro
+
+volumes:
+  pgdata:

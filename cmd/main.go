@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"log"
 	"net/http"
 	"strings"
@@ -13,7 +12,11 @@ import (
 )
 
 func main() {
-	var db *sql.DB
+	db, err := repo.NewPostgresConnection()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	repository := repo.NewPostgresRepository(db)
 
 	service := svc.NewService(repository)
