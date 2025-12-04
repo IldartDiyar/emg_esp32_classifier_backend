@@ -152,17 +152,18 @@ func (r *pgRepository) UpdateDeviceStatus(ctx context.Context, deviceID int, sta
 
 func (r *pgRepository) InsertDevice(ctx context.Context, name string) (*dto.Device, error) {
 	const q = `
-	INSERT INTO devices 
-	    (name, status)
-	VALUES 
-	    ($1, 'idle')
+		INSERT INTO devices (name, status)
+		VALUES ($1, 'idle')
+		RETURNING id, name, status, last_seen
 	`
+
 	var d dto.Device
 	err := r.db.QueryRowContext(ctx, q, name).
 		Scan(&d.ID, &d.Name, &d.Status, &d.LastSeen)
 	if err != nil {
 		return nil, err
 	}
+
 	return &d, nil
 }
 
