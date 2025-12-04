@@ -64,13 +64,16 @@ func (r *pgRepository) GetMovements(ctx context.Context) ([]dto.Movements, error
 
 	return movements, nil
 }
-
 func (r *pgRepository) GetMovementsById(ctx context.Context, MovementID int) (*dto.Movements, error) {
-	const q = ` SELECT movement_id, name, description FROM movements where movement_id = ?`
+	const q = `SELECT movement_id, name, description FROM movements WHERE movement_id = $1`
 
 	var movement dto.Movements
 
-	err := r.db.QueryRowContext(ctx, q, MovementID).Scan(&movement.Movement_id, &movement.Name, &movement.Description)
+	err := r.db.QueryRowContext(ctx, q, MovementID).Scan(
+		&movement.Movement_id,
+		&movement.Name,
+		&movement.Description,
+	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, cerrors.ErrNotFound
@@ -107,8 +110,8 @@ func (r *pgRepository) ListDevices(ctx context.Context) ([]dto.Device, error) {
 }
 
 func (r *pgRepository) GetDeviceById(ctx context.Context, DeviceID int) (*dto.Device, error) {
-	const q = `select id, name, status, last_seen from devices where id = ?`
-
+	const q = `SELECT id, name, status, last_seen FROM devices WHERE id = $1`
+	
 	var d dto.Device
 
 	err := r.db.QueryRowContext(ctx, q, DeviceID).Scan(&d.ID, &d.Name, &d.Status, &d.LastSeen)
