@@ -29,3 +29,9 @@ CREATE TABLE training_raw (
     ts TIMESTAMPTZ NOT NULL,
     raw BYTEA NOT NULL
 );
+
+
+INSERT INTO movements (movement_id, name, description) VALUES
+                                                           (1, 'Rest', 'Open/relaxed hand, no intentional tension'),
+                                                           (2, 'Fist', 'Strong full hand grip'),
+                                                           (3, 'Wrist Flexion', 'Bending wrist down with moderate tension');
