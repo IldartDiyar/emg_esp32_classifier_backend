@@ -22,7 +22,7 @@ CREATE TABLE training (
 
 CREATE TABLE training_raw (
     id BIGSERIAL PRIMARY KEY,
-    training_id INTEGER NOT NULL id,
+    training_id INTEGER NOT NULL,
     device_id INTEGER NOT NULL REFERENCES devices(id),
     movement_id INTEGER NOT NULL REFERENCES movements(movement_id),
     repetition INTEGER NOT NULL,
