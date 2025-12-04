@@ -1,0 +1,181 @@
+initial connection for esp
+esp32 
+1)ESP sends a WebSocket request with the device name, for example esp1
+{
+    event: "handshake",
+    deviceName: "esp1",
+    timestamp: 17000000
+}
+
+Backend inserts the device into the database INSERT INTO devices (name, status)
+                                            VALUES ('esp1', 'idle');` 
+
+---------------------------------
+initial connection for frontend
+(frontend)
+Frontend requests devices via (/api/v1/devices)
+{
+    [
+        {   
+                id: 1,
+                state: "training" (streaming, idle, training, disconnected, reserved)
+                name: "esp1"
+        },
+        {   
+                id: 2,
+                state: "idle" (streaming, idle, training, disconnected, reserved)
+                name: "esp2"
+        }
+    ]
+}
+
+Frontend selects device and sends /api/v1/check
+{
+    id: 2
+}
+Backend:
+SELECT status FROM devices WHERE id = 2;
+if status != 'idle'{
+    return bad_request
+}
+else 
+UPDATE devices
+SET status = 'reserved'
+WHERE id = $1
+RETURNING id; 
+
+If 200 frontend saves myDeviceId = 2 to useState + Context.
+                                          
+------------------------
+1) training 
+
+INSERT INTO movements (movement_id, name, description) VALUES
+(1, 'Rest', 'Open/relaxed hand, no intentional tension'),
+(2, 'Fist', 'Strong full hand grip'),
+(3, 'Wrist Flexion', 'Bending wrist down with moderate tension');
+
+1)Frontend to Backend (WebSocket /ws/frontend)
+{
+    event: "start_training",
+    device_id: 2, // device_id
+    movement_id: 1, // there is only 3 movement (Rest, Fist,  Wrist Flexion) 
+}
+2) Backend finds hardware for device_id = 2
+
+3)backend to esp via ws
+{
+    event: "raw_stream",
+    duration: 5
+}
+
+Backend stores the repetition:
+    INSERT INTO training (device_id, movement_id, repetition, timestamp)
+    VALUES (2, 1, 1, NOW());
+
+In memory the backend stores training_id for the ESP connection.
+
+4)ESP to Backend
+{
+    event: "raw_stream_begin",
+    timestamp: 1700000000,
+    data: null
+}
+
+Backend updates device status:
+UPDATE devices SET status = 'training', last_seen = NOW() WHERE id = 2;
+
+
+5)backend to all frontends (but frontend ignore if device id is not same with context myDeviceId)
+
+{   
+    event: "start_training",
+    deviceId: 2,
+    status: "ok",
+    timestamp: 1700000000,
+    rep:1,
+    movement_id: 1,
+}
+
+6) every 100 ms esp to backend 
+{
+    event: "raw_stream_in_process"
+    Timestamp: 1700000001,
+    raw: [100,200,300,400],
+}
+
+Backend determines the device from WS session and saves it
+
+INSERT INTO training_raw (training_id, device_id, timestamp, raw, movement_id, repetition)
+VALUES (training_id, 2, 1700000001, ARRAY[100,200,300,400], 1, 1);
+
+Backend updates
+UPDATE devices SET last_seen = NOW() WHERE id = 2;
+
+Backend sends this to all frontends
+{
+    event: "start_training_raw_data"
+    deviceId: 2,
+    raw: [
+        {
+            timestamp: 1700000001, 
+            raw: [100,200,300,400],
+        },
+        {
+            timestamp: 1700000002,
+            raw: [100,200,300,400],
+        }
+    ]
+}
+
+
+
+7) After 5 seconds ESP sends
+{
+    event: "raw_stream_finish",
+    Timestamp: 1700000001,
+    data: null,
+}
+Backend sets device to idle
+UPDATE devices SET status = 'idle', lastseen = NOW() WHERE id = 2;
+
+backend to  frontends 
+{
+    event: "start_training_completed"
+    Timestamp: 1700000001,
+    movement_id: 1,
+    rep: 1,
+    deviceid: 2
+}
+
+frontend to backend
+{   
+    event: "start_training",
+    deviceId: 2,
+    rep:2,
+    movement_id: 1,
+}
+Update repetition
+UPDATE training SET repetition = 2 where training_id = $training_id (from memory for connection of esp where device_id)
+
+
+---------------------
+Backend never starts rep 6
+It waits for frontend to send the next motion
+If rep = 5 and ESP sends:
+{
+    event: "raw_stream",
+    status: "finish",
+    Timestamp: 1700000001,
+    data: null,
+}
+Backend marks training finished
+update training set finished = true where trainin_id = $training_id (from memory for connection of esp where device_id)
+
+-------------------
+
+
+delete training when is over  
+
+
+
+

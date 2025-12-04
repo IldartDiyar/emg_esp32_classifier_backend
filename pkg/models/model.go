@@ -1,131 +1,67 @@
 package models
 
-import "encoding/json"
+import (
+	"errors"
+)
 
 type Event string
 
+var ErrMovementNotAllowed = errors.New("movement is not allowed: previous movement is not finished")
+
+const DefaultDurationOfTraining = 5
+
 const (
-	// RAW (ESP32 → Backend)
-	EventRawStream Event = "raw_stream"
 
-	// Training (ESP32 → Backend)
-	EventTrainingRepStarted  Event = "training_repetition_started"
-	EventTrainingRepFinished Event = "training_repetition_finished"
-	EventTrainingCompleted   Event = "training_completed"
+	// Frontend to backend
+	EventStartTraining  Event = "start_training"
+	EventStartStreaming Event = "start_streaming"
+	EventStopTraining   Event = "stop"
 
-	// Frontend → Backend (HTTP actions)
-	EventStartTraining     Event = "start_training"
-	EventStopTraining      Event = "stop_training"
-	EventStartVerification Event = "start_verification"
-	EventStopVerification  Event = "stop_verification"
-	EventStartStreaming    Event = "start_streaming"
-	EventStopStreaming     Event = "stop_streaming"
+	// Backend to esp
+	EventESPStartRawStream Event = "raw_stream"
+	EventESPStopRawStream  Event = "stop_raw_stream"
 
-	// Backend → Frontend
-	EventTrainingStatus         Event = "training_status"
-	EventVerificationPrediction Event = "verification_prediction"
-	EventGesturePrediction      Event = "gesture_prediction"
+	// Esp to backend
+	HandShake            Event = "handshake"
+	EventRawStreamBegin  Event = "raw_stream_begin" // first packet
+	EventRawStreamInProc Event = "raw_stream_in_process"
+	EventRawStreamFinish Event = "raw_stream_finish"
 
-	// Feedback (Frontend → Backend)
-	EventVerificationFeedback Event = "verification_feedback"
+	// backend to frontend
+	EventTrainingStarted   Event = "training_started"
+	EventTrainingRawData   Event = "training_raw_data"
+	EventTrainingCompleted Event = "start_training_completed"
 )
 
-type EventMessage interface {
-	GetEvent() Event
+type WsBackendToFrontend struct {
+	Event      Event       `json:"event"`
+	DeviceID   int         `json:"device_id"`
+	MovementID int         `json:"movement_id,omitempty"`
+	Rep        int         `json:"rep,omitempty"`
+	Message    string      `json:"message"`
+	Raw        []RawSample `json:"raw,omitempty"`
 }
 
-type FrontendAction struct {
-	Event      Event `json:"event"`
-	MovementID int   `json:"movement_id,omitempty"`
-}
-
-func (m FrontendAction) GetEvent() Event { return m.Event }
-
-type ESPCommand struct {
-	Event      Event `json:"event"`
-	MovementID int   `json:"movement_id,omitempty"`
-}
-
-func (m ESPCommand) GetEvent() Event { return m.Event }
-
-type RawStream struct {
-	Event     Event `json:"event"` // raw_stream
+type RawSample struct {
 	Timestamp int64 `json:"timestamp"`
 	Raw       []int `json:"raw"`
 }
 
-func (m RawStream) GetEvent() Event { return m.Event }
-
-type TrainingRepetitionStarted struct {
+type WsFrontendToBackend struct {
 	Event      Event `json:"event"`
-	MovementID int   `json:"movement_id"`
-	Repetition int   `json:"repetition"`
+	DeviceID   int   `json:"device_id"`
+	MovementID int   `json:"movement_id,omitempty"`
+	Rep        int   `json:"rep,omitempty"`
 }
 
-func (m TrainingRepetitionStarted) GetEvent() Event { return m.Event }
-
-type TrainingRepetitionFinished struct {
-	Event            Event `json:"event"`
-	MovementID       int   `json:"movement_id"`
-	Repetition       int   `json:"repetition"`
-	DurationMs       int   `json:"duration_ms"`
-	SamplesCollected int   `json:"samples_collected"`
-	Timestamp        int64 `json:"timestamp"`
+type WsEspToBackend struct {
+	Event      Event  `json:"event"`
+	DeviceName string `json:"device_name"`
+	Timestamp  int64  `json:"timestamp"`
+	Raw        []int  `json:"raw"`
 }
 
-func (m TrainingRepetitionFinished) GetEvent() Event { return m.Event }
-
-type TrainingCompleted struct {
-	Event       Event `json:"event"`
-	MovementID  int   `json:"movement_id"`
-	Repetitions int   `json:"repetitions"`
-	Timestamp   int64 `json:"timestamp"`
+type WsBackendToEsp struct {
+	Event    Event `json:"event"`
+	Duration int   `json:"duration"` // seconds
 }
-
-func (m TrainingCompleted) GetEvent() Event { return m.Event }
-
-type TrainingStatus struct {
-	Event       Event `json:"event"`
-	MovementID  int   `json:"movement_id"`
-	Repetition  int   `json:"repetition"`
-	SecondsLeft int   `json:"seconds_left"`
-}
-
-func (m TrainingStatus) GetEvent() Event { return m.Event }
-
-type VerificationPrediction struct {
-	Event             Event   `json:"event"`
-	PredictedMovement int     `json:"predicted_movement"`
-	Confidence        float64 `json:"confidence"`
-	Timestamp         int64   `json:"timestamp"`
-}
-
-func (m VerificationPrediction) GetEvent() Event { return m.Event }
-
-type GesturePrediction struct {
-	Event       Event   `json:"event"`
-	GestureID   int     `json:"gesture_id"`
-	GestureName string  `json:"gesture_name"`
-	Confidence  float64 `json:"confidence"`
-	Timestamp   int64   `json:"timestamp"`
-}
-
-func (m GesturePrediction) GetEvent() Event { return m.Event }
-
-type VerificationFeedback struct {
-	Event         Event `json:"event"`
-	MovementID    int   `json:"movement_id"`
-	UserConfirmed bool  `json:"user_confirmed"`
-}
-
-func (m VerificationFeedback) GetEvent() Event { return m.Event }
-
-// just wrapper
-type WSMessage struct {
-	Event     Event           `json:"event"`
-	Timestamp int64           `json:"timestamp,omitempty"`
-	Raw       []int           `json:"raw,omitempty"`
-	Body      json.RawMessage `json:"body,omitempty"`
-}
-
-func (m WSMessage) GetEvent() Event { return m.Event }
