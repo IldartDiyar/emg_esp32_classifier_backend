@@ -43,6 +43,12 @@ func (h *EspWSHandler) HandleEspWS(w http.ResponseWriter, r *http.Request) {
 		_, data, err := conn.ReadMessage()
 		if err != nil {
 			log.Printf("[WS ESP] read error: %v", err)
+
+			if deviceID != 0 {
+				h.hub.RemoveESP(deviceID)
+			}
+
+			conn.Close() // VERY IMPORTANT
 			return
 		}
 

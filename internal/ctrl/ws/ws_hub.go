@@ -68,3 +68,9 @@ func (h *Hub) SendToFrontend(deviceID int, data []byte) {
 		c.WriteMessage(websocket.TextMessage, data)
 	}
 }
+
+func (h *Hub) RemoveESP(deviceID int) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	delete(h.esp, deviceID)
+}
