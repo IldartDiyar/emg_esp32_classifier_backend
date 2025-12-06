@@ -83,8 +83,9 @@ func (s *Service) WSStartTraining(ctx context.Context, msg models.WsFrontendToBa
 	}
 
 	return &models.WsBackendToEsp{
-		Event:    models.EventESPStartRawStream,
-		Duration: models.DefaultDurationOfTraining,
+		Event:      models.EventESPStartRawStream,
+		Duration:   models.DefaultDurationOfTraining,
+		ServerTime: time.Now().UnixMilli(),
 	}, nil
 }
 
