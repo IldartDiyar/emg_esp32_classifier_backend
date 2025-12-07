@@ -206,8 +206,9 @@ func (s *Service) WSStartStreaming(ctx context.Context, msg models.WsFrontendToB
 	}
 
 	return &models.WsBackendToEsp{
-		Event:    models.EventESPStartRawStream,         // можно завести отдельный EventESPStartLiveStream
-		Duration: models.DefaultDurationOfTraining * 60, // например, длинный период, либо 0 как "безлимит"
+		Event:      models.EventESPStartRawStream, // можно завести отдельный EventESPStartLiveStream
+		Duration:   models.DefaultDurationOfTraining * 60,
+		ServerTime: time.Now().UnixMilli(),
 	}, nil
 }
 
