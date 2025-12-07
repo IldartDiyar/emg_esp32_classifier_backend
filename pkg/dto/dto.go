@@ -48,12 +48,16 @@ type TrainingSummary struct {
 func MapWsToTrainingRaw(rawSlice []int, espTs int64, session *sessions.Session) *TrainingRaw {
 	rawBytes := utils.IntSliceToBytea(rawSlice)
 
+	sec := espTs / 1_000_000
+	nsec := (espTs % 1_000_000) * 1000
+	ts := time.Unix(sec, nsec).UTC()
+
 	return &TrainingRaw{
 		TrainingID: session.TrainingID,
 		DeviceID:   session.DeviceID,
 		MovementID: session.MovementID,
 		Repetition: session.Rep,
-		TS:         time.Unix(espTs, 0).UTC(),
+		TS:         ts,
 		Raw:        rawBytes,
 	}
 }
