@@ -32,6 +32,6 @@ CREATE TABLE training_raw (
 
 
 INSERT INTO movements (movement_id, name, description) VALUES
-                                                           (1, 'Rest', 'Open/relaxed hand, no intentional tension'),
-                                                           (2, 'Fist', 'Strong full hand grip'),
-                                                           (3, 'Wrist Flexion', 'Bending wrist down with moderate tension');
+                                                           (1, 'Fist', 'Strong hand closure with full finger flexion'),
+                                                           (2, 'Wrist Extension', 'Lifting the wrist upward by activating the extensor forearm muscles'),
+                                                           (3, 'Wrist Flexion', 'Bending the wrist downward by activating the flexor forearm muscles');
