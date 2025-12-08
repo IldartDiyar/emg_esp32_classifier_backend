@@ -111,7 +111,7 @@ func (r *pgRepository) ListDevices(ctx context.Context) ([]dto.Device, error) {
 
 func (r *pgRepository) GetDeviceById(ctx context.Context, DeviceID int) (*dto.Device, error) {
 	const q = `SELECT id, name, status, last_seen FROM devices WHERE id = $1`
-	
+
 	var d dto.Device
 
 	err := r.db.QueryRowContext(ctx, q, DeviceID).Scan(&d.ID, &d.Name, &d.Status, &d.LastSeen)
@@ -273,7 +273,7 @@ func (r *pgRepository) SelectTrainingRawSamples(ctx context.Context, trainingID,
 		}
 
 		result = append(result, models.RawSample{
-			Timestamp: ts.Unix(),
+			Timestamp: ts.Format(time.RFC3339),
 			Raw:       utils.ByteaToIntSlice(raw),
 		})
 	}

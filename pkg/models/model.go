@@ -43,8 +43,8 @@ type WsBackendToFrontend struct {
 }
 
 type RawSample struct {
-	Timestamp int64 `json:"timestamp"`
-	Raw       []int `json:"raw"`
+	Timestamp string `json:"timestamp"`
+	Raw       []int  `json:"raw"`
 }
 
 type WsFrontendToBackend struct {
@@ -57,7 +57,7 @@ type WsFrontendToBackend struct {
 type WsEspToBackend struct {
 	Event      Event  `json:"event"`
 	DeviceName string `json:"device_name"`
-	Timestamp  int64  `json:"timestamp"`
+	Timestamp  string `json:"timestamp"`
 	Raw        []int  `json:"raw"`
 }
 

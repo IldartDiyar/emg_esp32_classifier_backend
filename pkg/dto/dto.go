@@ -3,6 +3,7 @@ package dto
 import (
 	"emg_esp32_classifier_backend/pkg/sessions"
 	"emg_esp32_classifier_backend/pkg/utils"
+	"strconv"
 	"time"
 )
 
@@ -45,11 +46,17 @@ type TrainingSummary struct {
 	Samples    int `json:"samples"`
 }
 
-func MapWsToTrainingRaw(rawSlice []int, espTs int64, session *sessions.Session) *TrainingRaw {
+func MapWsToTrainingRaw(rawSlice []int, espTs string, session *sessions.Session) *TrainingRaw {
 	rawBytes := utils.IntSliceToBytea(rawSlice)
 
-	sec := espTs / 1_000_000
-	nsec := (espTs % 1_000_000) * 1000
+	tsInt, err := strconv.ParseInt(espTs, 10, 64)
+	if err != nil {
+		tsInt = time.Now().UnixNano()
+	}
+
+	sec := tsInt / 1_000_000_000
+	nsec := tsInt % 1_000_000_000
+
 	ts := time.Unix(sec, nsec).UTC()
 
 	return &TrainingRaw{
