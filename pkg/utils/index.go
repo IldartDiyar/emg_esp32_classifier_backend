@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"strconv"
 	"strings"
 )
@@ -46,7 +45,16 @@ func IntSliceToString(nums []int) string {
 }
 
 func DecodeRawBytes(b []byte) []int {
-	var out []int
-	_ = json.Unmarshal(b, &out)
+	if len(b)%2 != 0 {
+		return []int{}
+	}
+
+	out := make([]int, len(b)/2)
+
+	for i := 0; i < len(b); i += 2 {
+		val := binary.LittleEndian.Uint16(b[i : i+2])
+		out[i/2] = int(val)
+	}
+
 	return out
 }
