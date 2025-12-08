@@ -12,6 +12,7 @@ import (
 	"encoding/csv"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -230,8 +231,18 @@ func (s *Service) GetMovements(ctx context.Context) ([]dto.Movements, error) {
 	return movs, nil
 }
 
+func IntSliceToString(nums []int) string {
+	if len(nums) == 0 {
+		return ""
+	}
+	strs := make([]string, len(nums))
+	for i, v := range nums {
+		strs[i] = strconv.Itoa(v)
+	}
+	return strings.Join(strs, ",")
+}
+
 func (s *Service) GetTrainingRawCSV(ctx context.Context) ([]byte, error) {
-	// Получаем TrainingRaw записи (не RawSample!)
 	rows, err := s.repo.GetAllRawData(ctx)
 	if err != nil {
 		return nil, err
@@ -249,12 +260,16 @@ func (s *Service) GetTrainingRawCSV(ctx context.Context) ([]byte, error) {
 		"timestamp",
 		"raw",
 	}
+
 	if err := writer.Write(header); err != nil {
 		return nil, err
 	}
 
 	for _, r := range rows {
+
 		rawDecoded := utils.DecodeRawBytes(r.Raw)
+
+		rawStr := IntSliceToString(rawDecoded)
 
 		row := []string{
 			strconv.Itoa(r.ID),
@@ -262,8 +277,8 @@ func (s *Service) GetTrainingRawCSV(ctx context.Context) ([]byte, error) {
 			strconv.Itoa(r.DeviceID),
 			strconv.Itoa(r.MovementID),
 			strconv.Itoa(r.Repetition),
-			r.TS.Format(time.RFC3339),
-			utils.IntSliceToString(rawDecoded),
+			r.TS.UTC().Format(time.RFC3339Nano),
+			rawStr,
 		}
 
 		if err := writer.Write(row); err != nil {
