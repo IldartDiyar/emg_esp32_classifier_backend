@@ -20,6 +20,7 @@ type Repository interface {
 
 	ListDevices(ctx context.Context) ([]dto.Device, error)
 	GetDeviceById(ctx context.Context, DeviceID int) (*dto.Device, error)
+	GetDeviceByName(ctx context.Context, deviceName string) (*dto.Device, error)
 	UpdateDeviceStatus(ctx context.Context, deviceID int, status dto.DeviceStatus) error
 	InsertDevice(ctx context.Context, name string) (*dto.Device, error)
 
@@ -115,6 +116,27 @@ func (r *pgRepository) GetDeviceById(ctx context.Context, DeviceID int) (*dto.De
 	var d dto.Device
 
 	err := r.db.QueryRowContext(ctx, q, DeviceID).Scan(&d.ID, &d.Name, &d.Status, &d.LastSeen)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, cerrors.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return &d, nil
+}
+
+func (r *pgRepository) GetDeviceByName(ctx context.Context, deviceName string) (*dto.Device, error) {
+	const q = `SELECT id, name, status, last_seen FROM devices WHERE name = $1`
+
+	var d dto.Device
+
+	err := r.db.QueryRowContext(ctx, q, deviceName).Scan(
+		&d.ID,
+		&d.Name,
+		&d.Status,
+		&d.LastSeen,
+	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, cerrors.ErrNotFound

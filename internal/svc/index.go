@@ -3,6 +3,7 @@ package svc
 import (
 	"bytes"
 	"context"
+	"emg_esp32_classifier_backend/internal/mlclient"
 	"emg_esp32_classifier_backend/internal/repo"
 	"emg_esp32_classifier_backend/pkg/cerrors"
 	"emg_esp32_classifier_backend/pkg/dto"
@@ -19,12 +20,14 @@ import (
 type Service struct {
 	repo    repo.Repository
 	session *sessions.SessionManager
+	ml      *mlclient.Client
 }
 
 func NewService(repo repo.Repository) *Service {
 	return &Service{
 		repo:    repo,
 		session: sessions.NewSessionManager(),
+		ml:      mlclient.New("http://localhost:8000"),
 	}
 }
 
@@ -93,38 +96,65 @@ func (s *Service) WSStartTraining(ctx context.Context, msg models.WsFrontendToBa
 // from esp
 func (s *Service) WSRawStream(ctx context.Context, msg models.WsEspToBackend, deviceId int) (*models.WsBackendToFrontend, error) {
 	ss, ex := s.session.Get(deviceId)
-	if !ex {
-		return nil, cerrors.ErrSomethingWentWrong
-	}
 
 	var event models.Event
+	var Prob []float64
+	var ClassID int
+	var ClassName string
 
 	raw := []models.RawSample{}
 
 	switch msg.Event {
 	case models.EventRawStreamBegin:
+		if !ex {
+			return nil, cerrors.ErrSomethingWentWrong
+		}
+
 		event = models.EventTrainingStarted
 		if err := s.repo.UpdateDeviceStatus(ctx, deviceId, dto.DeviceStatusStreaming); err != nil {
 			log.Printf("[RawStream][EventRawStreamBegin][UpdateDeviceStatus]: %v\n", err)
 		}
 		raw = nil
 	case models.EventRawStreamInProc:
-		event = models.EventTrainingRawData
-		err := s.repo.InsertTrainingRaw(ctx, dto.MapWsToTrainingRaw(msg.Raw, msg.Timestamp, ss))
-		if err != nil {
-			return nil, err
-		}
+		if ex {
+			event = models.EventTrainingRawData
+			err := s.repo.InsertTrainingRaw(ctx, dto.MapWsToTrainingRaw(msg.Raw, msg.Timestamp, ss))
+			if err != nil {
+				return nil, err
+			}
 
-		raw, err = s.repo.SelectTrainingRawSamples(ctx, ss.TrainingID, ss.DeviceID)
-		if err != nil {
-			return nil, err
-		}
+			raw, err = s.repo.SelectTrainingRawSamples(ctx, ss.TrainingID, ss.DeviceID)
+			if err != nil {
+				return nil, err
+			}
 
-		if err = s.repo.UpdateDeviceStatus(ctx, deviceId, dto.DeviceStatusStreaming); err != nil {
-			log.Printf("[RawStream][EventRawStreamBegin][UpdateDeviceStatus]: %v\n", err)
+			if err = s.repo.UpdateDeviceStatus(ctx, deviceId, dto.DeviceStatusStreaming); err != nil {
+				log.Printf("[RawStream][EventRawStreamBegin][UpdateDeviceStatus]: %v\n", err)
+			}
+		} else {
+			event = models.EventStreamingData
+			if err := s.repo.UpdateDeviceStatus(ctx, deviceId, dto.DeviceStatusStreaming); err != nil {
+				log.Printf("[RawStream][EventRawStreamBegin][UpdateDeviceStatus]: %v\n", err)
+			}
+
+			features := utils.ExtractFeatures(msg.Raw)
+
+			pred, err := s.ml.Predict(features)
+			if err != nil {
+				log.Printf("[ML ERROR] %v", err)
+			}
+
+			ClassID = pred.ClassID
+			ClassName = pred.ClassName
+			Prob = pred.Probabilities
 		}
 
 	case models.EventRawStreamFinish:
+
+		if !ex {
+			return nil, cerrors.ErrSomethingWentWrong
+		}
+
 		event = models.EventTrainingCompleted
 		if ss.Rep == 5 {
 			defer s.session.Delete(deviceId)
@@ -152,6 +182,9 @@ func (s *Service) WSRawStream(ctx context.Context, msg models.WsEspToBackend, de
 		MovementID: ss.MovementID,
 		Rep:        ss.Rep,
 		Raw:        raw,
+		Prob:       Prob,
+		ClassID:    ClassID,
+		ClassName:  ClassName,
 	}, nil
 }
 

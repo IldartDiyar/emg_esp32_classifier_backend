@@ -31,6 +31,7 @@ const (
 	EventTrainingStarted   Event = "training_started"
 	EventTrainingRawData   Event = "training_raw_data"
 	EventTrainingCompleted Event = "start_training_completed"
+	EventStreamingData     Event = "streaming_data"
 )
 
 type WsBackendToFrontend struct {
@@ -40,6 +41,9 @@ type WsBackendToFrontend struct {
 	Rep        int         `json:"rep,omitempty"`
 	Message    string      `json:"message"`
 	Raw        []RawSample `json:"raw,omitempty"`
+	ClassID    int         `json:"class_id,omitempty"`
+	ClassName  string      `json:"class_name,omitempty"`
+	Prob       []float64   `json:"prob,omitempty"`
 }
 
 type RawSample struct {
