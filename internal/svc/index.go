@@ -27,7 +27,7 @@ func NewService(repo repo.Repository) *Service {
 	return &Service{
 		repo:    repo,
 		session: sessions.NewSessionManager(),
-		ml:      mlclient.New("http://localhost:8000"),
+		ml:      mlclient.New("http://194.32.142.57:8000"),
 	}
 }
 
