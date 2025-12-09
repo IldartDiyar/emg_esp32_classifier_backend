@@ -27,7 +27,7 @@ func NewService(repo repo.Repository) *Service {
 	return &Service{
 		repo:    repo,
 		session: sessions.NewSessionManager(),
-		ml:      mlclient.New("http://host.docker.internal:8000"),
+		ml:      mlclient.New("http://emg-ml:8000"),
 	}
 }
 

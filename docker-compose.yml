@@ -12,9 +12,12 @@ services:
       DB_USER: emguser
       DB_PASS: emg123
       DB_NAME: emgdb
+      ML_HOST: emg-ml   # полезно
     ports:
       - "8080:8080"
     restart: unless-stopped
+    networks:
+      - emg-net
 
   postgres:
     image: postgres:16
@@ -29,6 +32,12 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./database.sql:/docker-entrypoint-initdb.d/database.sql:ro
+    networks:
+      - emg-net
 
 volumes:
   pgdata:
+
+networks:
+  emg-net:
+    external: true
