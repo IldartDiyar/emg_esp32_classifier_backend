@@ -1,3 +1,3 @@
 docker compose down --volumes --remove-orphans
-docker system prune -a --volumes -f
+docker system prune -f
 docker compose up --build -d
